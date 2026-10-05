@@ -1,0 +1,5 @@
+VS Code မှာ Terminal နှစ်ခုခွဲဖွင့်ပြီး Terminal တစ်ခုမှာ Next.js (npm run dev)၊ နောက် Terminal တစ်ခုမှာ Python (uvicorn main:app --reload) Run ရုံပါပဲ။   Deploy လုပ်တဲ့အခါမှာလည်း Frontend ကို Vercel မှာ တင်ပြီး Python ကို Render/Railway/Heroku တို့မှာ သီးသန့် အလွယ်တကူ တင်နိုင်ပါတယ်။
+
+venv\Scripts\activate
+
+=>pip install fastapi uvicorn requests pandas
