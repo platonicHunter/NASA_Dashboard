@@ -22,8 +22,8 @@ export default function LiveTelemetryPage() {
         setAsteroidCount(asteroidData?.element_count ?? 14);
       } catch (error) {
         console.error('Failed to fetch telemetry, falling back to mock data:', error);
-        setAsteroidCount(14); // Fallback Mock Value
-      } finally { // <-- ဒီနေရာမှာ font-mono စား အမှန် 'finally' လို့ ပြောင်းပေးပါ
+        setAsteroidCount(14); 
+      } finally { 
         setLoading(false);
       }
     }
@@ -52,6 +52,7 @@ export default function LiveTelemetryPage() {
           value={loading ? '...' : (asteroidCount ?? 14)}
           badge="REALTIME"
           subtitle="Tracked Today via NeoWs"
+          trend='neutral'
           loading={loading}
         />
         <StatCard
@@ -59,12 +60,14 @@ export default function LiveTelemetryPage() {
           value="408 km"
           subtitle="Orbit Velocity: 7.66 km/s"
           badge="NORMAL"
+          trend='up'
         />
         <StatCard
           title="Solar Flare Activity"
           value="Class M"
           subtitle="Minor Geomagnetic Storm"
           badge="WARNING"
+          trend='down'
         />
       </div>
 

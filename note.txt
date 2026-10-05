@@ -2,4 +2,133 @@ VS Code မှာ Terminal နှစ်ခုခွဲဖွင့်ပြီ�
 
 venv\Scripts\activate
 
-=>pip install fastapi uvicorn requests pandas
+=>pip install fastapi uvicorn requests pandas pylance
+
+uvicorn main:app --reload --port 8000
+
+
+
+
+///////////////////////////
+// src/lib/api-client.ts
+
+export async function fetchCO2Analytics() {
+  try {
+    const res = await fetch(`${PYTHON_BACKEND_URL}/api/analytics/co2-trend`, {
+      cache: 'no-store', // Real-time data ရရှိရန်
+    });
+    if (!res.ok) throw new Error('Failed to fetch from Python backend');
+    return await res.json();
+  } catch (error) {
+    console.warn('Python Backend Offline - Using Mock Data Fallback', error);
+    return null; // Page ဘက်က Mock Fallback သုံးသွားပါမည်
+  }
+}
+
+////////////////////////
+# main.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
+import numpy as np
+
+app = FastAPI(title="NASA Telemetry Analytics Engine")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/api/analytics/asteroids")
+def analyze_asteroids():
+    # 1. Raw Telemetry Data (NASA API မှ ရသော Data ဟု ယူဆပါမည်)
+    raw_data = [
+        {"id": "2026 AB1", "diameter_m": 195, "velocity_kmh": 24120, "miss_dist_km": 1240500, "is_hazardous": True},
+        {"id": "2026 CQ4", "diameter_m": 72, "velocity_kmh": 18450, "miss_dist_km": 850200, "is_hazardous": False},
+        {"id": "2026 XK9", "diameter_m": 310, "velocity_kmh": 31200, "miss_dist_km": 420000, "is_hazardous": True},
+        {"id": "2026 LP2", "diameter_m": 45, "velocity_kmh": 12100, "miss_dist_km": 2100000, "is_hazardous": False},
+    ]
+
+    # 2. Pandas DataFrame ပြောင်းခြင်း
+    df = pd.DataFrame(raw_data)
+
+    # 3. Data Processing & Hazard Score Index တွက်ချက်ခြင်း
+    # Score Formula: Velocity နဲ့ Diameter ကို Miss Distance နဲ့ မျှေတွက်ခြင်း
+    df["risk_score"] = np.round((df["diameter_m"] * df["velocity_kmh"]) / (df["miss_dist_km"] / 1000), 2)
+    
+    # 4. Dashboard အတွက် Key Metrics / Insights ထုတ်ယူခြင်း
+    avg_velocity = float(np.round(df["velocity_kmh"].mean(), 2))
+    max_risk_object = df.loc[df["risk_score"].idxmax()]["id"]
+    hazardous_count = int(df["is_hazardous"].sum())
+
+    return {
+        "status": "success",
+        "summary": {
+            "total_tracked": len(df),
+            "hazardous_count": hazardous_count,
+            "avg_velocity_kmh": avg_velocity,
+            "highest_risk_object": max_risk_object,
+        },
+        "records": df.to_dict(orient="records")
+    }
+
+/////////////////////////
+
+Python Data Analysis ဘက်မှာ ဒိုင်တွေကို ပိုပြီး ဆွဲဆောင်နိုင်မယ့် Advance Analytics & Machine Learning နမူနာ အပိုင်း (၂) ခုကို ဆက်လက် ဆွေးနွေးပါမယ်။၁။ Time-Series Forecasting (အနာဂတ် အခြေအနေ ခန့်မှန်းခြင်း)ရိုးရိုး Live Data ပြရုံတင် မဟုတ်ဘဲ Python ရဲ့ scikit-learn သို့မဟုတ် statsmodels ကို သုံးပြီး ရှေ့လာမယ့် ၇ ရက်စာ Telemetry Trend ကို Predict လုပ်ပြနိုင်ပါတယ်။ဥပမာ - Solar Radiation Spillover သို့မဟုတ် CO₂ Emission Level Predict လုပ်သည့် Python Logic:Python# main.py
+from sklearn.linear_model import LinearRegression
+import numpy as np
+
+@app.get("/api/analytics/co2-forecast")
+def forecast_co2():
+    # သမိုင်းဝင် ရက်ပေါင်း Data (Days 1 to 10)
+    X = np.array([[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]])
+    y = np.array([412, 414, 415, 418, 420, 422, 423, 426, 428, 430])
+
+    # Simple Linear Regression Model
+    model = LinearRegression()
+    model.fit(X, y)
+
+    # ရှေ့လာမည့် ၃ ရက် (Days 11, 12, 13) ကို Predict လုပ်ခြင်း
+    future_days = np.array([[11], [12], [13]])
+    predictions = model.predict(future_days)
+
+    return {
+        "historical": [{"day": int(x[0]), "ppm": int(v)} for x, v in zip(X, y)],
+        "forecast": [{"day": int(x[0]), "predicted_ppm": float(round(p, 2))} for x, p in zip(future_days, predictions)]
+    }
+Frontend Recharts မှာ ရိုးရိုး Line Chart အစား Historical Data (Solid Line) နဲ့ Forecasted Data (Dotted Line) ဆိုပြီး ပူးတွဲ ပြသပေးနိုင်ပါတယ်။၂။ Anomaly Detection System (ပုံမှန်မဟုတ်သော တန်ဖိုးများ ရှာဖွေခြင်း)Python ကနေ Normal Threshold Range ထက် ကျော်လွန်နေတဲ့ Data Point တွေကို Automatically Detect လုပ်ပြီး Dashboard မှာ Warning Alert Badge အဖြစ် ပြသပေးနိုင်ပါတယ်ရှင်။Z-score Analysis: $Z = \frac{X - \mu}{\sigma}$ သုံးပြီး Mean ($\mu$) နဲ့ Standard Deviation ($\sigma$) ထက်လွန်နေသော Outlier များကို ရှာဖွေပေးခြင်း။Alert Signal: Python မှ anomaly: true ဟု Indicator ပို့ပေးလိုက်ပါက Frontend ရှိ StatCard များ သို့မဟုတ် Header တွင် Flash Warning ပြသပေးခြင်း။
+
+
+
+//////////////////////////////////
+သုံးရမည့် အခြေအနေ / ရှာချင်သည့် အချက်အသုံးပြုရမည့် Python Libraryတည်ဆောက်ရမည့် Code / Task နမူနာ
+Data Cleaning & Manipulation(CSV/JSON ဖတ်ရန်၊ Data ပြင်ရန်၊ Missing Values ဖြည့်ရန်)
+Pandas
+pd.read_csv(), df.fillna(), df.groupby(), Data filtering ပြုလုပ်ခြင်း
+
+
+Mathematical & Matrix Operations(ကိန်းဂဏန်း တွက်ချက်မှု၊ Fast Array Processing)
+NumPy
+np.mean(), np.array(), Matrix multiplication, Risk Index တွက်ချက်ခြင်း
+
+Data Visualization & Analytics Plots(Python ဘက်တွင် Graph/Chart သီးသန့် ထုတ်ကြည့်လိုပါက)
+Matplotlib / Seaborn
+plt.plot(), sns.heatmap(), Data Distributions ရှာဖွေကြည့်ရှုခြင်း
+
+Time-Series Forecasting & Regression(အနာဂတ် Trend များ ခန့်မှန်းခြင်း၊ Linear Modeling)
+Scikit-Learn
+LinearRegression(), train_test_split(), Future Values Predict လုပ်ခြင်း
+
+Outlier & Anomaly Detection(ပုံမှန်မဟုတ်သော Extreme Values / Hazards ရှာရန်)
+SciPy / Scikit-Learn
+stats.zscore(), IsolationForest(), Risk Alert Marker သတ်မှတ်ခြင်း
+
+Astronomical & Orbital Calculations(ဂြိုဟ်ပတ်လမ်းတွက်ခြင်း၊ Coordinates ပြောင်းခြင်း)
+Astropy / Skyfield
+Satellite Orbit tracking, Planetary Positions တွက်ချက်ခြင်း
+
+
+REST API Server & Data Streaming(Next.js Dashboard သို့ Python Analytics Data ပို့ရန်)FastAPI + Uvicorn@app.get("/api/analytics"), JSON Response ပြန်ပေးခြင်း
