@@ -1,83 +1,80 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { navigationConfig } from '@/data/navigation';
-import { NavItem } from '@/types';
 
-export default function Sidebar({
-  activeNav,
-  activeSubNav,
-  onSelectNav,
-  onSelectSubNav,
-}: {
-  activeNav: string;
-  activeSubNav: string;
-  onSelectNav: (id: string) => void;
-  onSelectSubNav: (id: string) => void;
-}) {
+export default function Sidebar() {
+  const pathname = usePathname();
+
   return (
-    <aside className="w-64 bg-slate-900 text-white min-h-screen flex flex-col border-r border-slate-800">
-      {/* Brand / Logo */}
-      <div className="p-5 border-b border-slate-800 flex items-center space-x-3">
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white">
-          N
+    <aside className="w-64 bg-slate-900 text-slate-100 border-r border-slate-800 min-h-screen p-4 flex flex-col shrink-0">
+      {/* Space Apps Brand Header */}
+      <div className="flex items-center space-x-3 mb-8 px-2">
+        <div className="w-9 h-9 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/30">
+          🚀
         </div>
         <div>
-          <h1 className="font-bold text-sm tracking-wide">NASA SPACE APPS</h1>
-          <p className="text-xs text-blue-400 font-mono">Telemetry Dashboard</p>
+          <h1 className="text-sm font-bold tracking-wider text-white leading-tight uppercase">
+            NASA Telemetry
+          </h1>
+          <p className="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">
+            Space Apps 2026
+          </p>
         </div>
       </div>
 
-      {/* Dynamic Navigation Menu */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        {navigationConfig.map((item: NavItem) => {
-          const isActive = activeNav === item.id;
-
-          return (
-            <div key={item.id} className="space-y-1">
-              {/* Main Nav Item */}
-              <button
-                onClick={() => {
-                  onSelectNav(item.id);
-                  if (item.subItems && item.subItems.length > 0) {
-                    onSelectSubNav(item.subItems[0].id);
-                  }
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+      {/* Navigation Items */}
+      <nav className="space-y-4 flex-1">
+        {navigationConfig.map((item) => {
+          // Sub-items မပါသော သီးသန့် Link (ဥပမာ- /analytics)
+          if (!item.subItems && item.path) {
+            const isActive = pathname === item.path;
+            return (
+              <Link
+                key={item.id}
+                href={item.path}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold'
+                    : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
                 }`}
               >
                 <span>{item.title}</span>
-              </button>
+              </Link>
+            );
+          }
 
-              {/* Sub Nav Items (If Active & Has SubItems) */}
-              {isActive && item.subItems && (
-                <div className="ml-4 pl-3 border-l border-blue-500/30 space-y-1 my-1">
-                  {item.subItems.map((sub) => {
-                    const isSubActive = activeSubNav === sub.id;
-                    return (
-                      <button
-                        key={sub.id}
-                        onClick={() => onSelectSubNav(sub.id)}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                          isSubActive
-                            ? 'bg-blue-500/20 text-blue-300 font-semibold'
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                        }`}
-                      >
-                        <span>{sub.title}</span>
-                        {sub.badge && (
-                          <span className="text-[10px] bg-blue-500/30 text-blue-300 px-1.5 py-0.5 rounded">
-                            {sub.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+          // Sub-items ပါသော Group Link များ (ဥပမာ- Overview, Atmosphere)
+          return (
+            <div key={item.id} className="space-y-1.5">
+              <div className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                {item.title}
+              </div>
+              <div className="pl-3 space-y-1 border-l border-slate-800 ml-2">
+                {item.subItems?.map((sub) => {
+                  const isActive = pathname === sub.path;
+                  return (
+                    <Link
+                      key={sub.id}
+                      href={sub.path}
+                      className={`flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        isActive
+                          ? 'bg-cyan-500/10 text-cyan-400 font-semibold border-l-2 border-cyan-400 -ml-px'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <span>{sub.title}</span>
+                      {sub.badge && (
+                        <span className="text-[9px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1.5 py-0.5 rounded font-mono font-bold tracking-wider">
+                          {sub.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
