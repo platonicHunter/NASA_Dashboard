@@ -3,12 +3,14 @@ export interface SubNavItem {
   id: string;
   title: string;
   badge?: string;
+  path:string;
 }
 
 export interface NavItem {
   id: string;
   title: string;
   iconName: string;
+  path?: string;
   subItems?: SubNavItem[];
 }
 
